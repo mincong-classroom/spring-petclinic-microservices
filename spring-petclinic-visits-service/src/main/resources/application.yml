@@ -1,9 +1,15 @@
 spring:
   application:
     name: visits-service
-  config:
-    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/}
 
+
+---
+# The Config Server, except in Kubernetes
+spring:
+  config:
+    activate:
+      on-profile: "!kubernetes"
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/}
 
 ---
 spring:
@@ -11,3 +17,37 @@ spring:
     activate:
       on-profile: docker
     import: configserver:http://config-server:8888
+
+---
+# Kubernetes, without the Config Server and the Discovery Server: the settings that the Config
+# Server serves are here, and the other services are called by the name of their Service.
+spring:
+  config:
+    activate:
+      on-profile: kubernetes
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+  sql:
+    init:
+      schema-locations: classpath*:db/hsqldb/schema.sql
+      data-locations: classpath*:db/hsqldb/data.sql
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+server:
+  port: 8080
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  tracing:
+    sampling:
+      probability: 1
+    export:
+      zipkin:
+        endpoint: http://tracing-server/api/v2/spans
