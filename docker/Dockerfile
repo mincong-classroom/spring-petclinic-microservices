@@ -8,6 +8,9 @@ RUN java -Djarmode=layertools -jar application.jar extract
 FROM eclipse-temurin:17
 WORKDIR application
 
+# links the image to this repository when it is pushed to the GitHub Container Registry
+LABEL org.opencontainers.image.source=https://github.com/mincong-classroom/spring-petclinic-microservices
+
 ARG EXPOSED_PORT
 EXPOSE ${EXPOSED_PORT}
 
