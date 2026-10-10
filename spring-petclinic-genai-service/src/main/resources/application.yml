@@ -6,7 +6,7 @@ spring:
   profiles:
     active: production
   config:
-    import: optional:classpath:/creds.yaml
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/},optional:classpath:/creds.yaml
   ai:
     chat:
       client:
@@ -37,14 +37,6 @@ logging:
           chat:
             client:
               advisor: DEBUG
----
-# The Config Server, except in Kubernetes
-spring:
-  config:
-    activate:
-      on-profile: "!kubernetes"
-    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/}
-
 ---
 spring:
   config:
@@ -88,3 +80,7 @@ management:
     export:
       zipkin:
         endpoint: http://tracing-server/api/v2/spans
+logging:
+  level:
+    # The import of the first document is tried once, before Spring knows the profile: not logged
+    org.springframework.cloud.config.client: ERROR

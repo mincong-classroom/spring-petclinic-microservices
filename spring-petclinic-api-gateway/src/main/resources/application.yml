@@ -1,6 +1,8 @@
 spring:
   application:
     name: api-gateway
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/}
   cloud:
     gateway:
       server:
@@ -43,14 +45,6 @@ spring:
                 - CircuitBreaker=name=genaiCircuitBreaker,fallbackUri=/fallback
   reactor:
     context-propagation: auto
----
-# The Config Server, except in Kubernetes
-spring:
-  config:
-    activate:
-      on-profile: "!kubernetes"
-    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/}
-
 ---
 spring:
   config:
@@ -124,3 +118,7 @@ management:
     export:
       zipkin:
         endpoint: http://tracing-server/api/v2/spans
+logging:
+  level:
+    # The import of the first document is tried once, before Spring knows the profile: not logged
+    org.springframework.cloud.config.client: ERROR
