@@ -19,13 +19,13 @@ spring:
     import: configserver:http://config-server:8888
 
 ---
-# Kubernetes: the configuration comes from a ConfigMap, mounted as a file, as it comes from the
-# Config Server elsewhere.
+# Kubernetes: the configuration comes from a ConfigMap, mounted as files, as it comes from the
+# Config Server elsewhere: application.yml for every service, then the file of this service.
 spring:
   config:
     activate:
       on-profile: kubernetes
-    import: file:/config/application.yml
+    import: file:/config/application.yml,optional:file:/config/${spring.application.name}.yml
   cloud:
     config:
       enabled: false
