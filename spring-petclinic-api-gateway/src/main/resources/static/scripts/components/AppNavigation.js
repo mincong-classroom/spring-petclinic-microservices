@@ -12,6 +12,7 @@ export const AppNavigation = {
                         <li class="nav-item"><router-link exact-active-class="active" class="nav-link" to="/owners" title="find owners"><span class="fa fa-search me-2" aria-hidden="true"></span><span>Find owners</span></router-link></li>
                         <li class="nav-item"><router-link exact-active-class="active" class="nav-link" to="/owners/new" title="register owner"><span class="fa fa-plus me-2" aria-hidden="true"></span><span>Register owner</span></router-link></li>
                         <li class="nav-item"><router-link exact-active-class="active" class="nav-link" to="/vets" title="veterinarians"><span class="fa fa-th-list me-2" aria-hidden="true"></span><span>Veterinarians</span></router-link></li>
+                        <li class="nav-item"><router-link exact-active-class="active" class="nav-link" to="/about" title="about"><span class="fa fa-info-circle me-2" aria-hidden="true"></span><span>About</span></router-link></li>
                     </ul>
                 </div>
             </div>
