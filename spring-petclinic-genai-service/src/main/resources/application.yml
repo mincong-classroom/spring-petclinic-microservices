@@ -6,7 +6,7 @@ spring:
   profiles:
     active: production
   config:
-    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/},optional:classpath:/creds.yaml
+    import: optional:classpath:/creds.yaml
   ai:
     chat:
       client:
@@ -38,8 +38,28 @@ logging:
             client:
               advisor: DEBUG
 ---
+# The Config Server, except in Kubernetes
+spring:
+  config:
+    activate:
+      on-profile: "!kubernetes"
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/}
+
+---
 spring:
   config:
     activate:
       on-profile: docker
     import: configserver:http://config-server:8888
+
+---
+# Kubernetes: the configuration comes from a ConfigMap, mounted as a file, as it comes from the
+# Config Server elsewhere.
+spring:
+  config:
+    activate:
+      on-profile: kubernetes
+    import: file:/config/application.yml
+  cloud:
+    config:
+      enabled: false
