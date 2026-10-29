@@ -35,6 +35,17 @@ spring:
       type: simple
       qdrant:
         initialize-schema: true
+  cloud:
+    gateway:
+      server:
+        webflux:
+          filter:
+            # The client of Qdrant brings gRPC, with which the gateway creates its filter
+            # JsonToGrpc. That filter needs the class io.grpc.netty.NettyChannelBuilder, which the
+            # client doesn't have (it has the shaded Netty of gRPC), and the service would fail
+            # to start. This service routes no gRPC.
+            json-to-grpc:
+              enabled: false
 
 
 logging:
