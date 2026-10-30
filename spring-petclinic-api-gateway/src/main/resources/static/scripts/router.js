@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
+import { AboutPage } from './pages/AboutPage.js';
 import { OwnerDetailsPage } from './pages/OwnerDetailsPage.js';
 import { OwnerFormPage } from './pages/OwnerFormPage.js';
 import { OwnersPage } from './pages/OwnersPage.js';
@@ -41,6 +42,9 @@ export const router = createRouter({
     }, {
         path: '/owners/:ownerId/pets/:petId/visits',
         component: VisitsPage
+    }, {
+        path: '/about',
+        component: AboutPage
     }, {
         path: '/:pathMatch(.*)*',
         redirect: '/'

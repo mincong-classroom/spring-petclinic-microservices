@@ -12,7 +12,7 @@ function renderMarkdown(content) {
 export const ChatBox = {
     setup() {
         const storageKey = 'petclinic.chat.messages';
-        const minimized = ref(false);
+        const minimized = ref(true);
         const message = ref('');
         const messages = ref([]);
         const messageContainer = ref(null);
@@ -27,6 +27,14 @@ export const ChatBox = {
                     messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
                 }
             });
+        }
+
+        function toggle() {
+            minimized.value = !minimized.value;
+            if (!minimized.value) {
+                // The messages were hidden: show the last ones again
+                scrollToBottom();
+            }
         }
 
         async function send() {
@@ -84,13 +92,17 @@ export const ChatBox = {
             messageContainer,
             renderMarkdown,
             clearError,
-            send
+            send,
+            toggle
         };
     },
     template: `
-        <div class="chatbox" :class="{ minimized: minimized }">
-            <button class="chatbox-header" type="button" @click="minimized = !minimized">Chat with Us!</button>
-            <div class="chatbox-content">
+        <div class="chatbox overflow-hidden" :class="{ minimized: minimized }">
+            <button class="chatbox-header border-0 position-relative" type="button" :aria-expanded="!minimized" @click="toggle">
+                Chat with Us!
+                <span class="fa position-absolute top-50 end-0 translate-middle-y me-3" :class="minimized ? 'fa-chevron-up' : 'fa-chevron-down'" aria-hidden="true"></span>
+            </button>
+            <div v-show="!minimized" class="chatbox-content">
                 <div ref="messageContainer" class="chatbox-messages">
                     <div v-for="(chatMessage, index) in messages" :key="index" class="chat-bubble" :class="chatMessage.author" v-html="renderMarkdown(chatMessage.content)"></div>
                 </div>
