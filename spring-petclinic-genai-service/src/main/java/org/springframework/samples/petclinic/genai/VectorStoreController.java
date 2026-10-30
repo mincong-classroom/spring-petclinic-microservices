@@ -1,19 +1,14 @@
 package org.springframework.samples.petclinic.genai;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.grpc.Points.PointStruct;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.JsonReader;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.ParameterizedTypeReference;
@@ -27,20 +22,12 @@ import tools.jackson.core.JacksonException;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-
-import static io.qdrant.client.PointIdFactory.id;
-import static io.qdrant.client.ValueFactory.value;
-import static io.qdrant.client.VectorsFactory.vectors;
 
 /**
  * Loads the veterinarians data into a vector store for the purpose of RAG functionality.
@@ -52,31 +39,24 @@ public class VectorStoreController {
 
 	private final Logger logger = LoggerFactory.getLogger(VectorStoreController.class);
 
-	// The payload key of the text of a document, in QdrantVectorStore
-	private static final String QDRANT_CONTENT_FIELD_NAME = "doc_content";
-
 	private final VectorStore vectorStore;
     private final WebClient webClient;
-	private final String qdrantCollectionName;
 
-    public VectorStoreController(VectorStore vectorStore, WebClient.Builder webClientBuilder,
-			@Value("${spring.ai.vectorstore.qdrant.collection-name:" + QdrantVectorStore.DEFAULT_COLLECTION_NAME
-					+ "}") String qdrantCollectionName) {
+    public VectorStoreController(VectorStore vectorStore, WebClient.Builder webClientBuilder) {
 		this.webClient = webClientBuilder.build();
 		this.vectorStore = vectorStore;
-		this.qdrantCollectionName = qdrantCollectionName;
 	}
 
 	@EventListener
 	public void loadVetDataToVectorStoreOnStartup(ApplicationStartedEvent event) throws IOException {
-		Resource resource = new ClassPathResource("vectorstore.json");
-
-		// Qdrant keeps its data across the restarts of the service: load the same pre-embedded
-		// database into it, only when its collection is empty
-		if (this.vectorStore instanceof QdrantVectorStore qdrantVectorStore && resource.exists()) {
-			loadVetDataToQdrant(qdrantVectorStore, resource);
+		// Qdrant keeps its own data, which is loaded outside of the service, such as from a
+		// snapshot: the service loads nothing into it
+		if (this.vectorStore instanceof QdrantVectorStore) {
+			logger.info("vector store in Qdrant: nothing to load at startup");
 			return;
 		}
+
+		Resource resource = new ClassPathResource("vectorstore.json");
 
 		// Check if file exists
 		if (this.vectorStore instanceof SimpleVectorStore simpleVectorStore && resource.exists()) {
@@ -116,49 +96,6 @@ public class VectorStoreController {
 		}
 
 		logger.info("vector store loaded with {} documents", documents.size());
-	}
-
-	// Writes the documents of vectorstore.json into Qdrant with their embeddings, through the native
-	// client: VectorStore.add() would compute the embeddings again, with the AI provider.
-	private void loadVetDataToQdrant(QdrantVectorStore store, Resource resource) throws IOException {
-		QdrantClient client = store.<QdrantClient>getNativeClient().orElseThrow();
-		try {
-			long count = client.countAsync(this.qdrantCollectionName).get();
-			if (count > 0) {
-				logger.info("vector store already has {} documents in the Qdrant collection {}", count,
-						this.qdrantCollectionName);
-				return;
-			}
-
-			Map<String, PreEmbeddedDocument> documents;
-			try (InputStream input = resource.getInputStream()) {
-				documents = new ObjectMapper().readValue(input, new TypeReference<Map<String, PreEmbeddedDocument>>() {
-				});
-			}
-			List<PointStruct> points = documents.values()
-				.stream()
-				.map(document -> PointStruct.newBuilder()
-					.setId(id(UUID.fromString(document.id())))
-					.setVectors(vectors(document.embedding()))
-					.putPayload(QDRANT_CONTENT_FIELD_NAME, value(document.text()))
-					.build())
-				.toList();
-			client.upsertAsync(this.qdrantCollectionName, points).get();
-			logger.info("vector store loaded into the Qdrant collection {} with {} documents from vectorstore.json",
-					this.qdrantCollectionName, points.size());
-		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new IllegalStateException("Interrupted while loading the vector store into Qdrant", e);
-		}
-		catch (ExecutionException e) {
-			throw new IllegalStateException("Failed to load the vector store into Qdrant", e);
-		}
-	}
-
-	// A document of vectorstore.json, as SimpleVectorStore saves it. Its metadata is empty.
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	private record PreEmbeddedDocument(String id, String text, List<Float> embedding) {
 	}
 
 	public Resource convertListToJsonResource(List<Vet> vets) {

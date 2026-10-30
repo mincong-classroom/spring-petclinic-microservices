@@ -31,10 +31,9 @@ spring:
       # The implementation of the vector store:
       # - "simple": in the memory of the service, loaded from vectorstore.json at startup
       # - "qdrant": a Qdrant server, at spring.ai.vectorstore.qdrant.host and port (6334, gRPC),
-      #   loaded from vectorstore.json at startup when its collection is empty
+      #   whose collection vector_store already holds the vets: the service neither creates it
+      #   nor loads it
       type: simple
-      qdrant:
-        initialize-schema: true
   cloud:
     gateway:
       server:
